@@ -7,13 +7,13 @@ import { Moon, Sun, Bell, Zap } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 
 // Pages
-import Dashboard from './pages/Dashboard';
-import FocusPage from './pages/FocusPage';
-import TasksPage from './pages/TasksPage';
-import JournalPage from './pages/JournalPage';
-import SettingsPage from './pages/SettingsPage';
-import ProjectsPage from './pages/ProjectsPage';
-import LoginPage from './pages/LoginPage';
+import Dashboard from './Pages/Dashboard';
+import FocusPage from './Pages/FocusPage';
+import TasksPage from './Pages/TasksPage';
+import JournalPage from './Pages/JournalPage';
+import SettingsPage from './Pages/SettingsPage';
+import ProjectsPage from './Pages/ProjectsPage';
+import LoginPage from './Pages/LoginPage';
 
 // --- ROUTE GUARDS ---
 
