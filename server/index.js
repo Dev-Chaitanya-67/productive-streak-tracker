@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 // --- DYNAMIC CORS CONFIGURATION ---
 const allowedOrigins = [
   'http://localhost:5173', // Local Vite development
-  'https://your-frontend-domain.vercel.app', // <--- REPLACE THIS WITH YOUR ACTUAL VERCEL URL
+  'https://streaks-tracker.vercel.app', // <--- REPLACE THIS WITH YOUR ACTUAL VERCEL URL
   'https://your-netlify-site.netlify.app', // <--- REPLACE THIS WITH YOUR ACTUAL NETLIFY URL (if using Netlify)
 ];
 
