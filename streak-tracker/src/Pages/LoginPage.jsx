@@ -28,7 +28,7 @@ const LoginPage = () => {
     setError('');
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const apiUrl = `${import.meta.env.VITE_API_URL}${endpoint}`;
+    const apiUrl = `${import.meta.env.VITE_API_URL}/api${endpoint}`;
 
     try {
       const res = await fetch(apiUrl, {
