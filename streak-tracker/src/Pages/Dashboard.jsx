@@ -24,7 +24,7 @@ const Dashboard = () => {
     const fetchLists = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/tasks`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

@@ -74,7 +74,7 @@ const TasksPage = () => {
   const editRef = useRef(null);
 
   // --- API HANDLERS ---
-  const API_URL = `${import.meta.env.VITE_API_URL}/tasks`;
+  const API_URL = `${import.meta.env.VITE_API_URL}/api/tasks`;
   const getAuthHeader = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -274,7 +274,7 @@ const TasksPage = () => {
       try {
         // 2. Call API to update Database
         // We use encodeURIComponent to handle names with spaces like "Side Project"
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/tasks/list/${encodeURIComponent(listName)}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/list/${encodeURIComponent(listName)}`, {
           method: 'DELETE',
           headers: getAuthHeader()
         });

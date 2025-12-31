@@ -110,7 +110,7 @@ const FocusPage = () => {
   // --- 3. FETCHING ---
   const fetchTasks = async () => {
     try {
-      const res = await fetch(`${API_BASE}/tasks`, { headers: getAuth() });
+      const res = await fetch(`${API_BASE}/api/tasks`, { headers: getAuth() });
       const data = await res.json();
       if (res.ok) setAvailableTasks(data.filter(t => !t.completed));
     } catch (err) { console.error(err); }
@@ -118,7 +118,7 @@ const FocusPage = () => {
 
   const fetchSounds = async () => {
     try {
-      const res = await fetch(`${API_BASE}/focus/sounds`, { headers: getAuth() });
+      const res = await fetch(`${API_BASE}/api/focus/sounds`, { headers: getAuth() });
       const data = await res.json();
       if (res.ok) setCustomSounds(data);
     } catch (err) { console.error(err); }
@@ -126,7 +126,7 @@ const FocusPage = () => {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API_BASE}/focus`, { headers: getAuth() });
+      const res = await fetch(`${API_BASE}/api/focus`, { headers: getAuth() });
       const data = await res.json();
       if (res.ok) setFocusReport(data);
     } catch (err) { console.error(err); }
@@ -149,7 +149,7 @@ const FocusPage = () => {
       const duration = mode === 'focus' ? focusLength : shortLength;
       const date = new Date();
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-      await fetch(`${API_BASE}/focus`, {
+      await fetch(`${API_BASE}/api/focus`, {
         method: 'POST',
         headers: getAuth(),
         body: JSON.stringify({ duration, mode, date: date.toISOString().split('T')[0] })
@@ -191,7 +191,7 @@ const FocusPage = () => {
     if(!newSoundUrl || !newSoundName) return;
     try {
       // NOTE: For this native player, URL must be a direct MP3 link, NOT a YouTube link
-      const res = await fetch(`${API_BASE}/focus/sounds`, { method: 'POST', headers: getAuth(), body: JSON.stringify({ label: newSoundName, url: newSoundUrl }) });
+      const res = await fetch(`${API_BASE}/api/focus/sounds`, { method: 'POST', headers: getAuth(), body: JSON.stringify({ label: newSoundName, url: newSoundUrl }) });
       const data = await res.json();
       if(res.ok) { setCustomSounds([data, ...customSounds]); setIsAddingSound(false); setNewSoundName(''); setNewSoundUrl(''); }
     } catch(err) { console.error(err); }
@@ -199,7 +199,7 @@ const FocusPage = () => {
 
   const deleteSound = async (id, url) => {
     try {
-      await fetch(`${API_BASE}/focus/sounds/${id}`, { method: 'DELETE', headers: getAuth() });
+      await fetch(`${API_BASE}/api/focus/sounds/${id}`, { method: 'DELETE', headers: getAuth() });
       setCustomSounds(customSounds.filter(s => s._id !== id));
       if(activeSound === url) { setActiveSound(null); setIsPlayingAudio(false); }
     } catch(err) { console.error(err); }

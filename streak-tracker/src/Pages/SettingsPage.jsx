@@ -130,7 +130,7 @@ const SettingsPage = () => {
            
            // 4. Send to Backend
            const token = localStorage.getItem('token');
-           const res = await fetch(`${import.meta.env.VITE_API_URL}/journals/bulk`, {
+           const res = await fetch(`${import.meta.env.VITE_API_URL}/api/journals/bulk`, {
              method: 'POST',
              headers: { 
                'Content-Type': 'application/json', 

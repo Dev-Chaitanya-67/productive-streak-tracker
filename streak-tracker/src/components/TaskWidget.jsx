@@ -20,7 +20,7 @@ const TaskWidget = ({ title = "Essentials", listName = null, onDelete }) => {
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  const API_URL = `${import.meta.env.VITE_API_URL}/tasks`;
+  const API_URL = `${import.meta.env.VITE_API_URL}/api/tasks`;
   const getAuthHeader = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('token')}`

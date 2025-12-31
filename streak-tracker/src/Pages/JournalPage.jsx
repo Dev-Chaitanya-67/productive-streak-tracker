@@ -27,7 +27,7 @@ const JournalPage = () => {
   const [viewEntry, setViewEntry] = useState(null); 
 
   // --- API CONFIG ---
-  const API_URL = `${import.meta.env.VITE_API_URL}/journals`;
+  const API_URL = `${import.meta.env.VITE_API_URL}/api/journals`;
   const getAuthHeader = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('token')}`
