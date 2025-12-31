@@ -35,9 +35,9 @@ const HeatmapWidget = () => {
       try {
         const apiBase = import.meta.env.VITE_API_URL;
         const [tasksRes, journalRes, focusRes] = await Promise.all([
-          fetch(`${apiBase}/tasks`, { headers: getAuth() }),
-          fetch(`${apiBase}/journals`, { headers: getAuth() }),
-          fetch(`${apiBase}/focus`, { headers: getAuth() })
+          fetch(`${apiBase}/api/tasks`, { headers: getAuth() }),
+          fetch(`${apiBase}/api/journals`, { headers: getAuth() }),
+          fetch(`${apiBase}/api/focus`, { headers: getAuth() })
         ]);
 
         const tasks = await tasksRes.json();
