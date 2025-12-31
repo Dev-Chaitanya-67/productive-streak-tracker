@@ -54,9 +54,9 @@ const HeatmapWidget = () => {
         if (!apiBase) throw new Error('VITE_API_URL is missing');
 
         const [tasksRes, journalRes, focusRes] = await Promise.all([
-          fetch(`${apiBase}/api/tasks`, { headers: getAuth() }),
-          fetch(`${apiBase}/api/journals`, { headers: getAuth() }),
-          fetch(`${apiBase}/api/focus`, { headers: getAuth() })
+          fetch(`${apiBase}/tasks`, { headers: getAuth() }),
+          fetch(`${apiBase}/journals`, { headers: getAuth() }),
+          fetch(`${apiBase}/focus`, { headers: getAuth() })
         ]);
 
         const tasks = await safeJson(tasksRes, 'Tasks API');
