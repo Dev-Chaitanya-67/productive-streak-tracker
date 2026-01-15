@@ -27,7 +27,7 @@ const LoginPage = () => {
     setIsLoading(true);
     setError('');
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const endpoint = isLogin ? '/auth/login' : '/auth/register';
     const apiUrl = `${import.meta.env.VITE_API_URL}/api${endpoint}`;
 
     try {

@@ -5,6 +5,12 @@
 @tailwind components;
 @tailwind utilities;
 
+
+@import "tailwindcss";
+
+@source "../node_modules/flowbite-datepicker";
+
+
 @layer base {
   :root {
     /* Map the new font */
