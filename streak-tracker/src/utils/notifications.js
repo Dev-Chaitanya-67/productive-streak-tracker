@@ -5,31 +5,54 @@ import { getLocalDate } from './date';
 // --- BROWSER NOTIFICATIONS ---
 export const requestPermission = async () => {
   if (!('Notification' in window)) {
-    console.log('❌ This browser does not support desktop notifications');
+    alert('❌ Your browser does not support notifications. Try Chrome or Edge.');
     return false;
   }
   
+  // Security Check for Mobile testing
+  if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+     alert('⚠️ Notifications strictly require HTTPS. \n\nIf you are testing on mobile via IP, they will NOT work.\n\nTry using ngrok or deploying to Vercel/Netlify for SSL.');
+     return false;
+  }
+  
   if (Notification.permission === 'granted') {
-    console.log('✅ Notification permission already granted');
     return true;
   }
   
-  console.log('🔔 Requesting notification permission...');
+  if (Notification.permission === 'denied') {
+     alert('⚠️ Notifications are blocked! Please reset permission in your browser settings (Lock icon in URL bar).');
+     return false;
+  }
+  
   const permission = await Notification.requestPermission();
-  console.log('Result:', permission);
-  return permission === 'granted';
+  if (permission === 'granted') {
+     new Notification("Permission Granted! 🚀", { body: "You will now receive task alerts." });
+     return true;
+  }
+  return false;
 };
 
 export const sendNotification = (title, body) => {
+  if (!('Notification' in window)) return;
+  
   if (Notification.permission === 'granted') {
-    console.log(`🚀 Sending Notification: ${title}`);
-    new Notification(title, {
-      body,
-      icon: '/pwa-192x192.png',
-      requireInteraction: true // Keeps notification on screen until user clicks
-    });
-  } else {
-    console.warn('⚠️ Cannot send notification: Permission not granted');
+     // Try-catch block for mobile implementation quirks
+     try {
+        const notif = new Notification(title, {
+          body,
+          icon: '/image.png', // Updated to use your available asset
+          vibrate: [200, 100, 200], // Vibration pattern for mobile
+          requireInteraction: true // Persistent
+        });
+        
+        // Mobile Click Handler
+        notif.onclick = function() {
+           window.focus();
+           this.close();
+        };
+     } catch (e) {
+        console.error("Notification Error:", e);
+     }
   }
 };
 
