@@ -14,6 +14,7 @@ const PRESET_SOUNDS = [
 ];
 
 import { storage } from '../utils/storage';
+import { markFocusCompleted } from '../utils/notifications';
 
 const FocusPage = () => {
   // --- STATE ---
@@ -187,6 +188,7 @@ const FocusPage = () => {
       interval = setInterval(() => setTimeLeft((t) => t - 1), 1000);
     } else if (timeLeft === 0 && isActive) {
       setIsActive(false);
+      markFocusCompleted(mode);
       logSession();
     }
     return () => clearInterval(interval);

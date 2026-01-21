@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { getLocalDate } from '../utils/date';
+import { markJournalSaved } from '../utils/notifications';
 
 const JournalPage = () => {
   // --- STATE ---
@@ -212,6 +213,7 @@ const JournalPage = () => {
       
       if (res.ok) {
         const formatted = { ...savedData, id: savedData._id };
+        markJournalSaved(); // Trigger confetti & activity log
         
         if (editingId) {
           setEntries(entries.map(e => e.id === editingId ? formatted : e));

@@ -180,8 +180,24 @@ export const initNotificationLoop = () => {
 // Call this when a task is completed
 export const markTaskCompleted = () => {
     storage.set('lastTaskLogDate', getLocalDate());
+    triggerSmallConfetti();
+};
+
+// Call this when a Focus Timer session ends
+export const markFocusCompleted = (mode) => {
+    storage.set('lastTaskLogDate', getLocalDate()); // Counts as activity
     
-    // Check for streak (simplified mock logic for now, or read from user stats if available)
-    // For now, let's just trigger a small celebration for every task
+    if (mode === 'focus') {
+        sendNotification("Focus Session Complete! 🎉", "Great job! Take a short break now.");
+        celebrateMilestone(); // Big celebration for focus
+    } else {
+        sendNotification("Break Over! ⏳", "Time to get back to focus.");
+        triggerSmallConfetti();
+    }
+};
+
+// Call this when a Journal entry is saved
+export const markJournalSaved = () => {
+    storage.set('lastTaskLogDate', getLocalDate()); // Counts as activity
     triggerSmallConfetti();
 };
