@@ -5,14 +5,7 @@ import { getLocalDate } from './date';
 // --- BROWSER NOTIFICATIONS ---
 export const requestPermission = async () => {
   if (!('Notification' in window)) {
-    alert('❌ Your browser does not support notifications. Try Chrome or Edge.');
     return false;
-  }
-  
-  // Security Check for Mobile testing
-  if (!window.isSecureContext && window.location.hostname !== 'localhost') {
-     alert('⚠️ Notifications strictly require HTTPS. \n\nIf you are testing on mobile via IP, they will NOT work.\n\nTry using ngrok or deploying to Vercel/Netlify for SSL.');
-     return false;
   }
   
   if (Notification.permission === 'granted') {
@@ -20,38 +13,56 @@ export const requestPermission = async () => {
   }
   
   if (Notification.permission === 'denied') {
-     alert('⚠️ Notifications are blocked! Please reset permission in your browser settings (Lock icon in URL bar).');
+     alert('⚠️ Notifications are blocked! Please reset permission in your browser settings.');
      return false;
   }
   
   const permission = await Notification.requestPermission();
   if (permission === 'granted') {
-     new Notification("Permission Granted! 🚀", { body: "You will now receive task alerts." });
+     // Use the new service worker send method
+     sendNotification("Permission Granted! 🚀", "You will now receive task alerts.");
      return true;
   }
   return false;
 };
 
-export const sendNotification = (title, body) => {
+export const sendNotification = async (title, body) => {
   if (!('Notification' in window)) return;
   
   if (Notification.permission === 'granted') {
-     // Try-catch block for mobile implementation quirks
      try {
+        // Method 1: Try Service Worker (Best for Mobile)
+        if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.ready;
+            if (reg && reg.showNotification) {
+                console.log("🚀 Sending via Service Worker");
+                await reg.showNotification(title, {
+                    body,
+                    icon: '/pwa-192x192.png',
+                    vibrate: [200, 100, 200],
+                    requireInteraction: true
+                });
+                return;
+            }
+        }
+
+        // Method 2: Fallback to regular Notification API (Desktop)
+        console.log("🚀 Sending via Standard API (Fallback)");
         const notif = new Notification(title, {
           body,
-          icon: '/image.png', // Updated to use your available asset
-          vibrate: [200, 100, 200], // Vibration pattern for mobile
-          requireInteraction: true // Persistent
+          icon: '/pwa-192x192.png',
+          vibrate: [200, 100, 200],
+          requireInteraction: true
         });
         
-        // Mobile Click Handler
         notif.onclick = function() {
            window.focus();
            this.close();
         };
      } catch (e) {
         console.error("Notification Error:", e);
+        // Last resort alert for testing
+        // alert(`NOTIFICATION: ${title}\n${body}`); 
      }
   }
 };
