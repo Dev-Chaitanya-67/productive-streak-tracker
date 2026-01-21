@@ -2,6 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import rateLimit from 'express-rate-limit';
 
 // Import Routes
 import authRoutes from './routes/authRoutes.js'; 
@@ -14,6 +17,21 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// --- SECURITY MIDDLEWARE ---
+// Set security HTTP headers
+app.use(helmet());
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again in 15 minutes',
+});
+app.use('/api', limiter);
 
 // --- DYNAMIC CORS CONFIGURATION ---
 const allowedOrigins = [

@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom'; 
 import { useTheme } from './context/ThemeContext';
 import { Moon, Sun, Bell, Zap } from 'lucide-react';
+import { storage } from './utils/storage';
+import { requestPermission, initNotificationLoop } from './utils/notifications';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -19,7 +21,7 @@ import LoginPage from './Pages/LoginPage';
 
 // 1. Kick out if NOT logged in
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const token = storage.getToken();
   if (!token) {
     return <Navigate to="/login" replace />;
   }
@@ -28,7 +30,7 @@ const ProtectedRoute = ({ children }) => {
 
 // 2. Kick out if ALREADY logged in (prevents accessing /login again)
 const PublicRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const token = storage.getToken();
   if (token) {
     return <Navigate to="/" replace />;
   }
@@ -37,6 +39,17 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   const { theme, toggleTheme } = useTheme();
+
+  // --- NOTIFICATIONS ---
+  React.useEffect(() => {
+    // 1. Ask for permission on app load
+    requestPermission();
+
+    // 2. Start the reminder loop
+    const cleanup = initNotificationLoop();
+    
+    return cleanup;
+  }, []);
 
   return (
     <div className={`${theme}`}>

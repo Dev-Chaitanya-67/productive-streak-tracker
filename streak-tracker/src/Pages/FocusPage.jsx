@@ -13,6 +13,8 @@ const PRESET_SOUNDS = [
   { id: 'study', label: 'Deep Study', url: '/sounds/DeepStudy.mp3' },
 ];
 
+import { storage } from '../utils/storage';
+
 const FocusPage = () => {
   // --- STATE ---
   const [mode, setMode] = useState('focus');
@@ -43,6 +45,7 @@ const FocusPage = () => {
 
   // STATS
   const [focusReport, setFocusReport] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const MODES = {
     focus: { label: 'Deep Focus', color: 'text-neon-500', bg: 'bg-neon-500', stroke: 'text-neon-500', glow: 'drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' },
@@ -50,13 +53,16 @@ const FocusPage = () => {
   };
 
   const API_BASE = import.meta.env.VITE_API_URL;
-  const getAuth = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` });
+  const getAuth = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${storage.getToken()}` });
 
   // --- 1. DATA FETCHING ---
   useEffect(() => {
-    fetchTasks();
-    fetchSounds(); // Custom DB sounds
-    fetchStats();
+    const init = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchTasks(), fetchSounds(), fetchStats()]);
+      setIsLoading(false);
+    };
+    init();
     
     // Cleanup audio on unmount
     return () => {
@@ -135,6 +141,48 @@ const FocusPage = () => {
   // --- 4. TIMER LOGIC ---
   useEffect(() => {
     let interval = null;
+    
+    // --- MEDIA SESSION UPDATER (Notifications) ---
+    if (isActive && 'mediaSession' in navigator) {
+        // Update playback state
+        navigator.mediaSession.playbackState = 'playing';
+        
+        // Calculate duration and position
+        const totalSeconds = mode === 'focus' ? focusLength * 60 : shortLength * 60;
+        // ensure position doesn't exceed duration (sanity check)
+        const position = Math.min(totalSeconds, Math.max(0, totalSeconds - timeLeft));
+        
+        navigator.mediaSession.setPositionState({
+            duration: totalSeconds,
+            playbackRate: 1,
+            position: position
+        });
+
+        // Set Metadata (Title shows "24:59 Remaining" etc)
+        // Note: Some browsers don't update title dynamically well, but we can try.
+        // Better to use static title "Deep Focus" and use the Seek Bar for time.
+        // Or update title every minute.
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: mode === 'focus' ? 'Deep Focus Session' : 'Short Break',
+            artist: `Streak Tracker`,
+            album: taskInput || 'Stay Productive',
+            artwork: [
+                { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }
+            ]
+        });
+
+        // Handlers for Lock Screen Controls
+        navigator.mediaSession.setActionHandler('pause', () => setIsActive(false));
+        navigator.mediaSession.setActionHandler('play', () => setIsActive(true));
+        navigator.mediaSession.setActionHandler('stop', () => {
+             setIsActive(false);
+             setTimeLeft(focusLength * 60);
+        });
+    } else if (!isActive && 'mediaSession' in navigator) {
+         navigator.mediaSession.playbackState = 'paused';
+    }
+
+
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => setTimeLeft((t) => t - 1), 1000);
     } else if (timeLeft === 0 && isActive) {
@@ -142,7 +190,7 @@ const FocusPage = () => {
       logSession();
     }
     return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
+  }, [isActive, timeLeft, mode, focusLength, shortLength, taskInput]);
 
   const logSession = async () => {
     try {
@@ -231,11 +279,43 @@ const FocusPage = () => {
     setTimeLeft(duration * 60);
   };
 
-  const toggleTimer = () => setIsActive(!isActive);
+  const toggleTimer = () => {
+     const newState = !isActive;
+     setIsActive(newState);
+     
+     // IMPORTANT: To make MediaSession work, we MUST play audio initiated by user click.
+     // If no ambient sound is active, play a silent buffer to engage the system media service.
+     if (newState && !isPlayingAudio) {
+         // Create a silent audio element if one doesn't exist for "no sound" mode
+         if (!activeSound) {
+             // Simplest Native Hack: Play a silent file
+             // This ensures "MediaSession" controls appear on mobile even if user chose no music
+             audioRef.current.src = "https://raw.githubusercontent.com/anars/blank-audio/master/5-seconds-of-silence.mp3"; 
+             audioRef.current.loop = true;
+             audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
+         } else {
+             audioRef.current.play();
+             setIsPlayingAudio(true);
+         }
+     } else if (!newState) {
+         // If pausing timer
+         if (!activeSound) {
+             audioRef.current.pause(); // Pause the silent track
+         }
+         // If ambient sound was playing, we might want to keep it or pause it? 
+         // Usually if you pause focus, you pause sound.
+         if (isPlayingAudio) {
+             audioRef.current.pause();
+             setIsPlayingAudio(false);
+         }
+     }
+  };
+  
   const resetTimer = () => {
     setIsActive(false);
     const duration = mode === 'focus' ? focusLength : shortLength;
     setTimeLeft(duration * 60);
+    if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   };
 
   // --- VISUALS ---

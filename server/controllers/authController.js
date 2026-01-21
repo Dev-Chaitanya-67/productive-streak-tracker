@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { validationResult } from 'express-validator';
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -12,12 +13,14 @@ const generateToken = (id) => {
 // @desc    Register new user
 // @route   POST /api/auth/register
 export const registerUser = async (req, res) => {
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ message: 'Please fill all fields' });
-    }
 
     // Check if user exists
     const userExists = await User.findOne({ username });
@@ -53,6 +56,11 @@ export const registerUser = async (req, res) => {
 // @desc    Authenticate a user
 // @route   POST /api/auth/login
 export const loginUser = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const { username, password } = req.body;
 

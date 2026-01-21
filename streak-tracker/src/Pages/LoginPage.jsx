@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, ArrowRight, Lock, User, Loader2, Eye, EyeOff } from 'lucide-react';
 
+import { storage } from '../utils/storage';
+
 const LoginPage = () => {
   const navigate = useNavigate();
   
@@ -43,11 +45,11 @@ const LoginPage = () => {
         throw new Error(data.message || 'Something went wrong');
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify({
+      storage.setToken(data.token);
+      storage.set('user', {
         id: data._id,
         username: data.username
-      }));
+      });
 
       navigate('/');
       window.location.reload(); 

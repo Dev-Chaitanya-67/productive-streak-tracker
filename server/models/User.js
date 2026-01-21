@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 6
+    minlength: 8
   },
   // We can add specific fields for your App later (e.g., focusStats)
   focusStats: {

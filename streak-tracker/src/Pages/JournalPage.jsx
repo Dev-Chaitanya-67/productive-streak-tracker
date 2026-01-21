@@ -4,6 +4,8 @@ import {
   Calendar, X, FileText,
   ChevronRight, ChevronLeft, Edit3, Layers, AlertCircle, Loader2
 } from 'lucide-react';
+import { storage } from '../utils/storage';
+import { getLocalDate } from '../utils/date';
 
 const JournalPage = () => {
   // --- STATE ---
@@ -19,7 +21,7 @@ const JournalPage = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [editingId, setEditingId] = useState(null); 
-  const [editorDate, setEditorDate] = useState(new Date().toISOString().split('T')[0]); 
+  const [editorDate, setEditorDate] = useState(getLocalDate()); 
   
   // UI States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -30,15 +32,11 @@ const JournalPage = () => {
   const API_URL = `${import.meta.env.VITE_API_URL}/api/journals`;
   const getAuthHeader = () => ({
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
+    'Authorization': `Bearer ${storage.getToken()}`
   });
 
   // --- HELPERS ---
-  const getTodayDate = () => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().split('T')[0];
-  };
+  const getTodayDate = () => getLocalDate();
 
   const formatMonthDisplay = (dateObj) => {
     return dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });

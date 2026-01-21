@@ -9,6 +9,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import ConfirmModal from '../components/ConfirmModal';
 import Papa from 'papaparse'; // Ensure you ran: npm install papaparse
+import { requestPermission, sendNotification } from '../utils/notifications';
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
@@ -23,6 +24,16 @@ const SettingsPage = () => {
   const [notifications, setNotifications] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [devMode, setDevMode] = useState(false);
+
+  // --- NOTIFICATION TEST ---
+  const handleTestNotification = async () => {
+     const hasPermission = await requestPermission();
+     if (hasPermission) {
+        sendNotification("🔔 This is a test!", "If you see this, your notifications are working perfectly.");
+     } else {
+        alert("Permission denied or not yet granted. Check browser settings.");
+     }
+  };
 
   const SETTING_TABS = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -224,12 +235,42 @@ const SettingsPage = () => {
       case 'general':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+             
+             {/* NOTIFICATION SETTINGS */}
+             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 mb-6">
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                   <Bell size={20} className="text-neon-500" /> Notifications
+                </h3>
+                
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50">
+                     <div>
+                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">System Notifications</p>
+                        <p className="text-xs text-zinc-500">Enable browser alerts for reminders.</p>
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <button 
+                           onClick={handleTestNotification}
+                           className="text-xs font-bold px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 rounded-lg transition-colors text-zinc-700 dark:text-zinc-200"
+                        >
+                           Test
+                        </button>
+                        <button onClick={() => setNotifications(!notifications)}>
+                          {notifications ? <ToggleRight className="text-neon-500" size={32} /> : <ToggleLeft className="text-zinc-400" size={32} />}
+                        </button>
+                     </div>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50">
+                     <div>
+                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">5-Minute Warning</p>
+                        <p className="text-xs text-zinc-500">Get alerted 5 minutes before a task is due.</p>
+                     </div>
+                  </div>
+                </div>
+             </div>
+
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4"><div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-600 dark:text-zinc-300"><Bell size={20} /></div><div><p className="font-bold text-zinc-900 dark:text-white">Notifications</p><p className="text-xs text-zinc-500">Get reminders for tasks</p></div></div>
-                <button onClick={() => setNotifications(!notifications)} className="text-zinc-400 hover:text-neon-500 transition-colors">{notifications ? <ToggleRight size={40} className="text-neon-500" /> : <ToggleLeft size={40} />}</button>
-              </div>
-              <div className="w-full h-px bg-zinc-100 dark:bg-zinc-800"></div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4"><div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-600 dark:text-zinc-300"><Database size={20} /></div><div><p className="font-bold text-zinc-900 dark:text-white">Auto-Save Journal</p><p className="text-xs text-zinc-500">Save content while typing</p></div></div>
                 <button onClick={() => setAutoSave(!autoSave)} className="text-zinc-400 hover:text-neon-500 transition-colors">{autoSave ? <ToggleRight size={40} className="text-neon-500" /> : <ToggleLeft size={40} />}</button>

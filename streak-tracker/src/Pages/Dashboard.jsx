@@ -1,40 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, LayoutGrid } from 'lucide-react';
+import { Plus, X, LayoutGrid, AlertCircle, Loader2 } from 'lucide-react';
 import FocusTimer from '../components/FocusTimer';
 import LiveMetrics from '../components/LiveMetrics';
 import TaskWidget from '../components/TaskWidget';
 import JournalWidget from '../components/JournalWidget';
 import HeatmapWidget from '../components/HeatmapWidget';
 import SectionHeader from '../components/SectionHeader';
+import { storage } from '../utils/storage';
 
 const Dashboard = () => {
   // --- STATE ---
-  // Load saved widgets from local storage or default to empty array
-  const [activeWidgets, setActiveWidgets] = useState(() => {
-    const saved = localStorage.getItem('dashboardWidgets');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Load saved widgets from local storage
+  const [activeWidgets, setActiveWidgets] = useState(() => 
+    storage.get('dashboardWidgets', [])
+  );
 
   const [availableLists, setAvailableLists] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // --- 1. FETCH AVAILABLE LISTS FROM API ---
   // We need to know what lists exist (e.g. "College", "LeetCode") to offer them as options
   useEffect(() => {
     const fetchLists = async () => {
       try {
-        const token = localStorage.getItem('token');
+        setIsLoading(true);
+        const token = storage.getToken();
+        
+        if (!token) {
+           setIsLoading(false);
+           return;
+        }
+
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        
+        if (!res.ok) throw new Error('Failed to fetch tasks');
+        
         const data = await res.json();
-        if (res.ok) {
-          // Extract unique customList names that are NOT null
-          const lists = [...new Set(data.map(t => t.customList).filter(Boolean))];
-          setAvailableLists(lists);
-        }
+        // Extract unique customList names that are NOT null
+        const lists = [...new Set(data.map(t => t.customList).filter(Boolean))];
+        setAvailableLists(lists);
       } catch (err) {
         console.error("Failed to fetch lists", err);
+        setError("Could not load your lists. Please try refreshing.");
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchLists();
@@ -42,7 +55,7 @@ const Dashboard = () => {
 
   // --- 2. SAVE WIDGET CONFIG ---
   useEffect(() => {
-    localStorage.setItem('dashboardWidgets', JSON.stringify(activeWidgets));
+    storage.set('dashboardWidgets', activeWidgets);
   }, [activeWidgets]);
 
   const addWidget = (listName) => {
@@ -56,6 +69,15 @@ const Dashboard = () => {
   const removeWidget = (listName) => {
     setActiveWidgets(activeWidgets.filter(w => w !== listName));
   };
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+         <AlertCircle className="text-red-500 mb-2" size={40} />
+         <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-8 lg:gap-10 items-start relative">

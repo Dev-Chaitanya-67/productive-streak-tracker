@@ -6,6 +6,10 @@ import {
   Code2, ExternalLink, Terminal, FolderPlus, Layers, AlertTriangle, Loader2
 } from 'lucide-react';
 
+import { storage } from '../utils/storage';
+import { getLocalDate } from '../utils/date';
+import { markTaskCompleted } from '../utils/notifications';
+
 const TasksPage = () => {
   // --- HELPERS ---
   const getCurrentTime = () => {
@@ -13,37 +17,38 @@ const TasksPage = () => {
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  const getTodayDate = () => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().split('T')[0];
-  };
+  const getTodayDate = () => getLocalDate();
 
   const getTomorrowDate = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().split('T')[0];
+    return getLocalDate(d);
   };
 
   const formatDateDisplay = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date(getTodayDate());
-    const tomorrow = new Date(getTodayDate());
-    tomorrow.setDate(today.getDate() + 1);
-    const yesterday = new Date(getTodayDate());
-    yesterday.setDate(today.getDate() - 1);
+    const date = new Date(dateString); // "2023-10-25" is parsed differently in browser depending on UTC vs local
+    // To safe parse YYYY-MM-DD as local date:
+    const [y, m, d] = dateString.split('-').map(Number);
+    const localDateObj = new Date(y, m - 1, d);
 
     const sDate = dateString;
-    const sToday = today.toISOString().split('T')[0];
-    const sTomorrow = tomorrow.toISOString().split('T')[0];
-    const sYesterday = yesterday.toISOString().split('T')[0];
+    const sToday = getLocalDate();
+    
+    // Tomorrow
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    const sTomorrow = getLocalDate(t);
+
+    // Yesterday
+    const yest = new Date();
+    yest.setDate(yest.getDate() - 1);
+    const sYesterday = getLocalDate(yest);
 
     if (sDate === sToday) return 'Today';
     if (sDate === sTomorrow) return 'Tomorrow';
     if (sDate === sYesterday) return 'Yesterday';
 
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return localDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   // --- STATE ---
@@ -77,7 +82,7 @@ const TasksPage = () => {
   const API_URL = `${import.meta.env.VITE_API_URL}/api/tasks`;
   const getAuthHeader = () => ({
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
+    'Authorization': `Bearer ${storage.getToken()}`
   });
 
   // 1. FETCH TASKS
@@ -90,6 +95,8 @@ const TasksPage = () => {
           // Normalize _id to id for frontend consistency
           const formattedTasks = data.map(t => ({ ...t, id: t._id }));
           setTasks(formattedTasks);
+          // Cache for notifications
+          storage.set('cachedTasks', formattedTasks);
 
           // Extract unique custom lists from tasks
           const existingLists = [...new Set(formattedTasks.map(t => t.customList).filter(Boolean))];
@@ -103,6 +110,13 @@ const TasksPage = () => {
     };
     fetchTasks();
   }, []);
+
+  // Update cache whenever tasks change (add, toggle, delete)
+  useEffect(() => {
+    if (tasks.length > 0) {
+      storage.set('cachedTasks', tasks);
+    }
+  }, [tasks]);
 
   // 2. CREATE TASK
   const addTask = async (e) => {
@@ -147,6 +161,10 @@ const TasksPage = () => {
     const newStatus = !taskToToggle.completed;
 
     setTasks(tasks.map(t => t.id === id ? { ...t, completed: newStatus } : t));
+
+    if (newStatus) {
+      markTaskCompleted();
+    }
 
     try {
       await fetch(`${API_URL}/${id}`, {
