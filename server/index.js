@@ -48,7 +48,7 @@ const allowedOrigins = [
   'https://streaks-tracker.vercel.app', // <--- REPLACE THIS WITH YOUR ACTUAL VERCEL URL
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
@@ -58,8 +58,13 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  credentials: true
-}));
+  credentials: true,
+  optionsSuccessStatus: 204
+};
+
+// Enable CORS for all routes and preflight requests
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
