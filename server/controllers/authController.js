@@ -81,3 +81,55 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// @desc    Get current user profile
+// @route   GET /api/auth/me
+// @access  Private
+export const getProfile = async (req, res) => {
+  try {
+    // req.user is set by protect middleware
+    res.json(req.user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Update current user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req, res) => {
+  try {
+    const allowed = ['fullName', 'bio', 'avatar', 'skills'];
+    const updates = {};
+
+    allowed.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        // For skills allow array or comma string
+        if (field === 'skills') {
+          if (Array.isArray(req.body.skills)) {
+            updates.skills = req.body.skills.filter(Boolean);
+          } else if (typeof req.body.skills === 'string') {
+            updates.skills = req.body.skills
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
+          }
+        } else {
+          updates[field] = req.body[field];
+        }
+      }
+    });
+
+    const user = await User.findByIdAndUpdate(req.user._id, updates, {
+      new: true,
+      runValidators: true,
+      select: '-password'
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

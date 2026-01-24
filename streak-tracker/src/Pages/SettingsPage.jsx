@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, Moon, Smartphone, Database, Shield, 
@@ -24,6 +24,99 @@ const SettingsPage = () => {
   const [notifications, setNotifications] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [devMode, setDevMode] = useState(false);
+
+  const [profile, setProfile] = useState({
+    fullName: '',
+    username: '',
+    bio: '',
+    avatar: '',
+    skills: ''
+  });
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
+
+  const fetchProfile = async () => {
+    try {
+      setLoadingProfile(true);
+      setProfileMessage('');
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Not logged in');
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Failed to load profile');
+      }
+
+      const data = await res.json();
+      setProfile({
+        fullName: data.fullName || '',
+        username: data.username || '',
+        bio: data.bio || '',
+        avatar: data.avatar || '',
+        skills: (data.skills || []).join(', ')
+      });
+    } catch (err) {
+      setProfileMessage(err.message);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setSavingProfile(true);
+      setProfileMessage('');
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Not logged in');
+
+      const payload = {
+        fullName: profile.fullName,
+        bio: profile.bio,
+        avatar: profile.avatar,
+        skills: profile.skills
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      };
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Failed to save profile');
+      }
+
+      const data = await res.json();
+      setProfile({
+        fullName: data.fullName || '',
+        username: data.username || '',
+        bio: data.bio || '',
+        avatar: data.avatar || '',
+        skills: (data.skills || []).join(', ')
+      });
+      setProfileMessage('Profile saved');
+    } catch (err) {
+      setProfileMessage(err.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   // --- NOTIFICATION TEST ---
   const handleTestNotification = async () => {
@@ -180,13 +273,17 @@ const SettingsPage = () => {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl">
               <div className="relative group">
-                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-zinc-800 shadow-xl" />
+                <img
+                  src={profile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop'}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-zinc-800 shadow-xl"
+                />
               </div>
               <div className="text-center md:text-left">
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Admin User</h2>
-                <p className="text-zinc-500 font-medium">CSE Student • COEP Tech University</p>
+                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">{profile.fullName || 'Your name'}</h2>
+                <p className="text-zinc-500 font-medium">{profile.bio || 'Tell us about you'}</p>
                 <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
-                  {['React', 'Node.js', 'Python'].map(tag => (
+                  {(profile.skills ? profile.skills.split(',').map((s) => s.trim()).filter(Boolean) : []).map((tag) => (
                     <span key={tag} className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-full text-xs font-bold border border-zinc-200 dark:border-zinc-700">{tag}</span>
                   ))}
                 </div>
@@ -195,19 +292,75 @@ const SettingsPage = () => {
 
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"><label className="text-xs font-bold text-zinc-500 uppercase ml-1">Full Name</label><input type="text" defaultValue="Admin User" className="w-full p-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-white outline-none" /></div>
-                <div className="space-y-2"><label className="text-xs font-bold text-zinc-500 uppercase ml-1">Username</label><input type="text" defaultValue="@dev_admin" className="w-full p-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-white outline-none" /></div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={profile.fullName}
+                    onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+                    className="w-full p-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-white outline-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Username</label>
+                  <input
+                    type="text"
+                    value={profile.username}
+                    disabled
+                    className="w-full p-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-400 dark:text-zinc-500 outline-none cursor-not-allowed"
+                  />
+                </div>
               </div>
-              <div className="space-y-2"><label className="text-xs font-bold text-zinc-500 uppercase ml-1">Bio</label><textarea rows="3" defaultValue="Building the future, one commit at a time." className="w-full p-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-white outline-none resize-none" /></div>
-              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Avatar URL</label>
+                <input
+                  type="text"
+                  value={profile.avatar}
+                  onChange={(e) => setProfile({ ...profile, avatar: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full p-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-white outline-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Bio</label>
+                <textarea
+                  rows="3"
+                  value={profile.bio}
+                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                  className="w-full p-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-white outline-none resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Skills (comma separated)</label>
+                <input
+                  type="text"
+                  value={profile.skills}
+                  onChange={(e) => setProfile({ ...profile, skills: e.target.value })}
+                  placeholder="React, Node.js"
+                  className="w-full p-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold text-zinc-900 dark:text-white outline-none"
+                />
+              </div>
+
+              {profileMessage && (
+                <div className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+                  {profileMessage}
+                </div>
+              )}
+
               <div className="pt-4 flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800 mt-4">
-                 <button 
-                    onClick={() => setShowLogoutModal(true)} 
+                 <button
+                    onClick={() => setShowLogoutModal(true)}
                     className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl font-bold transition-colors"
                  >
                     <LogoutIcon size={18} /> Log Out
                  </button>
-                <button className="px-6 py-2 bg-neon-500 text-white font-bold rounded-xl hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-neon-500/20">Save Changes</button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile || loadingProfile}
+                  className="px-6 py-2 bg-neon-500 text-white font-bold rounded-xl hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-neon-500/20 disabled:opacity-60"
+                >
+                  {savingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </div>
           </div>

@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+  fullName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   username: {
     type: String,
     required: true,
@@ -12,6 +17,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 8
+  },
+  bio: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  avatar: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  skills: {
+    type: [String],
+    default: []
   },
   // We can add specific fields for your App later (e.g., focusStats)
   focusStats: {

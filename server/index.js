@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Import Routes
 import authRoutes from './routes/authRoutes.js'; 
@@ -14,6 +16,10 @@ import focusRoutes from './routes/focusRoutes.js';
 import habitRoutes from './routes/habitRoutes.js';
 
 dotenv.config();
+
+// Resolve __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,9 +41,11 @@ app.use('/api', limiter);
 
 // --- DYNAMIC CORS CONFIGURATION ---
 const allowedOrigins = [
-  'http://localhost:5173', // Local Vite development
+  'http://localhost:5173', // Local Vite development (HTTP)
+  'https://localhost:5173', // Local Vite development (HTTPS)
+  'http://localhost:5174', // Local Vite development (HTTP) - alternate port
+  'https://localhost:5174', // Local Vite development (HTTPS) - alternate port
   'https://streaks-tracker.vercel.app', // <--- REPLACE THIS WITH YOUR ACTUAL VERCEL URL
-  'https://your-netlify-site.netlify.app', // <--- REPLACE THIS WITH YOUR ACTUAL NETLIFY URL (if using Netlify)
 ];
 
 app.use(cors({
@@ -64,6 +72,18 @@ app.use('/api/habits', habitRoutes); // Habit routes registered properly
 
 app.get('/', (req, res) => {
   res.send('Momentum V2.0 API is Running 🚀');
+});
+
+// --- SERVE FRONTEND IN PRODUCTION ---
+const clientPath = path.join(__dirname, '../streak-tracker/dist');
+app.use(express.static(clientPath));
+
+// Fallback for React Router routes (must be after API routes)
+app.get('*', (req, res) => {
+  if (req.originalUrl.startsWith('/api')) {
+    return res.status(404).json({ message: 'API route not found' });
+  }
+  res.sendFile(path.join(clientPath, 'index.html'));
 });
 
 // --- DATABASE CONNECTION ---
