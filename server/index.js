@@ -9,11 +9,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Import Routes
-import authRoutes from './routes/authRoutes.js'; 
-import taskRoutes from './routes/taskRoutes.js'; 
-import journalRoutes from './routes/journalRoutes.js'; 
-import focusRoutes from './routes/focusRoutes.js'; 
+import authRoutes from './routes/authRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
+import journalRoutes from './routes/journalRoutes.js';
+import focusRoutes from './routes/focusRoutes.js';
 import habitRoutes from './routes/habitRoutes.js';
+import noteRoutes from './routes/noteRoutes.js'; // NEW: Notes routes
 
 dotenv.config();
 
@@ -74,6 +75,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/journals', journalRoutes);
 app.use('/api/focus', focusRoutes);
 app.use('/api/habits', habitRoutes); // Habit routes registered properly
+app.use('/api/notes', noteRoutes); // NEW: Notes routes registered
 
 app.get('/', (req, res) => {
   res.send('Momentum V2.0 API is Running 🚀');
