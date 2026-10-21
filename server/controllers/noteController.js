@@ -13,11 +13,13 @@ export const getNotes = async (req, res) => {
 // Create or Update a note with conflict resolution
 export const upsertNote = async (req, res) => {
   try {
-    const noteId = req.params.id || req.body.id;
-    const noteData = { ...req.body, userId: req.user.id };
+    const noteId = req.params.id || req.body.id || req.body._id;
 
-    // Conflict Resolution: Only update if server doc is older than app's doc
-    // If document doesn't exist (upsert), it will be created
+    // Clean data: remove _id and id from $set payload because _id is immutable in MongoDB
+    const noteData = { ...req.body, userId: req.user.id };
+    delete noteData._id;
+    delete noteData.id;
+
     const result = await Note.updateOne(
       {
         _id: noteId,
@@ -31,7 +33,6 @@ export const upsertNote = async (req, res) => {
       { upsert: true }
     );
 
-    // Fetch the updated/created note to return
     const updatedNote = await Note.findOne({ _id: noteId, userId: req.user.id });
 
     res.status(200).json({
@@ -39,6 +40,48 @@ export const upsertNote = async (req, res) => {
       note: updatedNote,
       result
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Bulk sync endpoint for multiple notes at once
+export const bulkUpsertNotes = async (req, res) => {
+  try {
+    const { notes } = req.body;
+
+    if (!Array.isArray(notes) || notes.length === 0) {
+      return res.status(400).json({ error: 'Notes array is required' });
+    }
+
+    const results = [];
+    const userId = req.user.id;
+
+    for (const noteData of notes) {
+      const noteId = noteData._id || noteData.id;
+
+      // Clean data: remove _id and id from $set payload
+      const cleanNoteData = { ...noteData, userId };
+      delete cleanNoteData._id;
+      delete cleanNoteData.id;
+
+      const result = await Note.updateOne(
+        {
+          _id: noteId,
+          userId: userId,
+          $or: [
+            { updatedAt: { $lt: cleanNoteData.updatedAt } },
+            { updatedAt: { $exists: false } }
+          ]
+        },
+        { $set: cleanNoteData },
+        { upsert: true }
+      );
+
+      results.push({ id: noteId, result });
+    }
+
+    res.status(200).json({ success: true, results });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -55,43 +98,6 @@ export const deleteNote = async (req, res) => {
     }
 
     res.status(200).json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Optional: Bulk sync endpoint for multiple notes at once
-export const bulkUpsertNotes = async (req, res) => {
-  try {
-    const { notes } = req.body;
-
-    if (!Array.isArray(notes) || notes.length === 0) {
-      return res.status(400).json({ error: 'Notes array is required' });
-    }
-
-    const results = [];
-    const userId = req.user.id;
-
-    for (const noteData of notes) {
-      const noteWithUser = { ...noteData, userId };
-
-      const result = await Note.updateOne(
-        {
-          _id: noteData._id,
-          userId: userId,
-          $or: [
-            { updatedAt: { $lt: noteData.updatedAt } },
-            { updatedAt: { $exists: false } }
-          ]
-        },
-        { $set: noteWithUser },
-        { upsert: true }
-      );
-
-      results.push({ id: noteData._id, result });
-    }
-
-    res.status(200).json({ success: true, results });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
